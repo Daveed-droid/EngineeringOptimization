@@ -13,12 +13,13 @@ TODO: Implement a 3d data visualizer
 """
 import numpy as np
 from numpy import linalg as la
+from matplotlib import pyplot as plt
 
 G, M_earth, M_moon, alt_moon = 6.674 * 10 ** -11, 5.972 * 10 ** 24, 7.342 * 10 ** 22, 3.844 * 10 ** 8
 R_earth, ISS_alt, R_moon = 6.378 * 10 ** 6, 4.000 * 10 ** 5, 1.738 * 10 ** 6
 
 
-def Simulate(propagator, alpha, beta, alt, dv, dt = 5, G = G, M_earth = M_earth, M_moon = M_moon):
+def Simulate(propagator, alpha, beta, alt, dv, dt = 15, G = G, M_earth = M_earth, M_moon = M_moon):
     """
     :param propagator: Numerical state propagator
     :param alpha: Starting phase of spacecraft
@@ -32,17 +33,19 @@ def Simulate(propagator, alpha, beta, alt, dv, dt = 5, G = G, M_earth = M_earth,
     :return: Trajectory positions
     """
     x_earth = np.zeros((3, 1))
+    x_moon = MoonPosition(beta, 0)
     t = np.array([0])
     t_end = 10 * (24 * 60 * 60)
     x, x0_dot = InitialConditions(alpha, alt)
     x_dot = x0_dot + dv
     x_dot_dot = np.zeros((3, 1))
     while t[-1] < t_end:
-        x_moon = MoonPosition(beta, t[-1])
+        x_moon = np.hstack((x_moon, MoonPosition(beta, t[-1])))  # FIXME: Has n+1 list
         # EOM
         x_dot_dot_earth = (x_earth[:, -1:] - x[:, -1:]) * ((G * M_earth) / la.norm(x_earth[:, -1:] - x[:, -1:]) ** 3)
         x_dot_dot_moon = (x_moon[:, -1:] - x[:, -1:]) * ((G * M_moon) / la.norm(x_moon[:, -1:] - x[:, -1:]) ** 3)
         x_dot_dot_total = x_dot_dot_earth + x_dot_dot_moon
+
         x_dot_dot = np.hstack((x_dot_dot, x_dot_dot_total))
         x_dot = np.hstack((x_dot, propagator(x_dot_dot[:, -1:], x_dot[:, -1:], dt)))
         x = np.hstack((x, propagator(x_dot[:, -1:], x[:, -1:], dt)))
@@ -116,22 +119,24 @@ def circle(r, p = (0, 0)):
     return x, y
 
 
-if __name__ == "__main__":
-    from matplotlib import pyplot as plt
-
-    dv_man = np.array([[-3100],
-                       [200],
-                       [0]])
-    x, x_moon = Simulate(SimplePropagator, 180, 0, 400000, dv_man)
+def display(x, x_moon, R_earth = R_earth, R_moon = R_moon):
     fig, axs = plt.subplots(1, 1)
 
     x_c, y_c = circle(R_earth)
     axs.plot(x_c, y_c, color = "blue", linewidth = 1.5)
     x_c_m, y_c_m = circle(R_moon, (x_moon[0, -1], x_moon[1, -1]))
 
-    axs.plot(x_moon[0, :], x_moon[1, :], color = "grey", linewidth = 1.5, linestyle = "dashed")
+    axs.plot(x_moon[0, :], x_moon[1, :], color = "grey", linewidth = 0.5, linestyle = "dashed")
     axs.plot(x_c_m, y_c_m, color = "grey", linewidth = 1.5)
 
     axs.plot(x[0, :], x[1, :], color = "red", linewidth = 1.5)
     axs.axis("equal")
     fig.show()
+
+
+if __name__ == "__main__":
+    dv_man = np.array([[-3100],
+                       [200],
+                       [0]])
+    x, x_moon = Simulate(SimplePropagator, 180, 0, 400000, dv_man)
+    display(x, x_moon)
