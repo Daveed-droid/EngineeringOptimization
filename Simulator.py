@@ -4,12 +4,13 @@
 @Author ：David Canosa Ybarra
 @Date ：28/06/2022 15:43
 
-Version 1.0.0
+Version 1.0.1
 
 General things to do:
 TODO: Add inclinations
 TODO: Implement a way to visualize the data [DONE]
 TODO: Implement a 3d data visualizer
+TODO: Add better propagators
 """
 import numpy as np
 from numpy import linalg as la
