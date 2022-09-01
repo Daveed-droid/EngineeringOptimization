@@ -7,10 +7,9 @@
 Version 1.0.1
 
 General things to do:
-TODO: Add inclinations
 TODO: Implement a way to visualize the data [DONE]
-TODO: Implement a 3d data visualizer
 TODO: Add better propagators
+TODO: Add performance metric
 """
 import numpy as np
 from numpy import linalg as la
@@ -33,30 +32,56 @@ def Simulate(propagator, alpha, beta, alt, dv, dt = 15, G = G, M_earth = M_earth
     :param M_moon: Constant
     :return: Trajectory positions
     """
+    # 1. Set initial positions and velocities
     x_earth = np.zeros((3, 1))
     x_moon = MoonPosition(beta, 0)
-    t = np.array([0])
-    t_end = 10 * (24 * 60 * 60)
     x, x0_dot = InitialConditions(alpha, alt)
     x_dot = x0_dot + dv
     x_dot_dot = np.zeros((3, 1))
+    # 2. Initialise time array and set an ending time for the simulation
+    t = np.array([0])
+    t_end = 10 * (24 * 60 * 60)
+    # 3. Begin simulation
     while t[-1] < t_end:
+        # 3a. Set current moon position
         x_moon = np.hstack((x_moon, MoonPosition(beta, t[-1])))  # FIXME: Has n+1 list
-        # EOM
+        # 3b. Solve the equations of motion to find the accelerations at time t
         x_dot_dot_earth = (x_earth[:, -1:] - x[:, -1:]) * ((G * M_earth) / la.norm(x_earth[:, -1:] - x[:, -1:]) ** 3)
         x_dot_dot_moon = (x_moon[:, -1:] - x[:, -1:]) * ((G * M_moon) / la.norm(x_moon[:, -1:] - x[:, -1:]) ** 3)
         x_dot_dot_total = x_dot_dot_earth + x_dot_dot_moon
 
         x_dot_dot = np.hstack((x_dot_dot, x_dot_dot_total))
+        # 3c. Use the propagator to find the position at time t + dt
         x_dot = np.hstack((x_dot, propagator(x_dot_dot[:, -1:], x_dot[:, -1:], dt)))
         x = np.hstack((x, propagator(x_dot[:, -1:], x[:, -1:], dt)))
+        # 3d. Set the new time for the loop to start at and print progress bar
         t = np.hstack((t, t[-1] + dt))
-        ShowLoading(t[-1], t_end)
+        # ShowLoading(t[-1], t_end)
+    # 4. End the simulation and return the position values for the spacecraft and the moon at each respective time
     return x, x_moon
 
 
-def Performance(x, x_moon):
-    pass
+def Cost(x, x_moon, dv, c1, c2, R_moon = R_moon):
+    # Check for moon intercept
+    dist_m = np.array([])
+    for i in range(len((x - x_moon)[1, :])):
+        dist_m = np.hstack((dist_m, [la.norm((x - x_moon)[:, i])]))
+    # Check for earth collision prob remove for optimizer
+    dist_e = np.array([])
+    for i in range(len((x)[1, :])):
+        dist_e = np.hstack((dist_e, [la.norm((x)[:, i])]))
+    ec = min(dist_e)
+
+    if ec <= (R_earth + 100000):
+        Earth_Collision = np.nan
+    else:
+        Earth_Collision = 0
+    a = min(dist_m) + Earth_Collision
+    b = la.norm(dv)
+    norm_a = a / (3 * R_moon)
+    norm_b = b / 3000
+    cost = c1 * norm_a + c2 * norm_b
+    return cost
 
 
 def SimplePropagator(x_dot, x, dt):
@@ -121,7 +146,7 @@ def circle(r, p = (0, 0)):
 
 
 def display(x, x_moon, R_earth = R_earth, R_moon = R_moon):
-    fig, axs = plt.subplots(1, 1)
+    fig, axs = plt.subplots(1, 1, figsize = (5, 5), dpi = 400)
 
     x_c, y_c = circle(R_earth)
     axs.plot(x_c, y_c, color = "blue", linewidth = 1.5)
@@ -131,13 +156,36 @@ def display(x, x_moon, R_earth = R_earth, R_moon = R_moon):
     axs.plot(x_c_m, y_c_m, color = "grey", linewidth = 1.5)
 
     axs.plot(x[0, :], x[1, :], color = "red", linewidth = 1.5)
-    axs.axis("equal")
+
+    dist = np.array([])
+    for i in range(len((x - x_moon)[1, :])):
+        dist = np.hstack((dist, [la.norm((x - x_moon)[:, i])]))
+    a = min(dist)
+    ai = np.where(dist == a)
+
+    x_c_m, y_c_m = circle(R_moon, (x_moon[0, ai], x_moon[1, ai]))
+    axs.plot(x_c_m, y_c_m, color = "yellow", linewidth = 1.5)
+
+    axs.plot(x[0, ai], x[1, ai], color = "yellow", marker = "x")
+
+    axs.set_xlim(left = -5 * 10 ** 8, right = 5 * 10 ** 8)
+    axs.set_ylim(bottom = -5 * 10 ** 8, top = 5 * 10 ** 8)
+    axs.set_xlabel("")
+    axs.set_ylabel("")
     fig.show()
+    fig.savefig("Trajectory_simulation")
 
 
 if __name__ == "__main__":
-    dv_man = np.array([[-3100],
-                       [200],
-                       [0]])
-    x, x_moon = Simulate(SimplePropagator, 180, 0, 400000, dv_man)
+    angle = -80
+    magnitude = 6000
+    norm_dv = np.array([[np.cos(np.deg2rad(angle))],
+                        [np.sin(np.deg2rad(angle))],
+                        [0]])
+    dv_man = norm_dv * magnitude
+    x, x_moon = Simulate(SimplePropagator, 0, 120, 400000, dv_man, dt = 100)
+    dist = np.array([])
+    for i in range(len((x)[1, :])):
+        dist = np.hstack((dist, [la.norm((x)[:, i])]))
+    a = min(dist)
     display(x, x_moon)
