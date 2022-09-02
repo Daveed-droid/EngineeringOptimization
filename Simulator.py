@@ -67,6 +67,52 @@ def Cost(x, x_moon, dv, c1, c2, R_moon = R_moon):
     for i in range(len((x - x_moon)[1, :])):
         dist_m = np.hstack((dist_m, [la.norm((x - x_moon)[:, i])]))
     # Check for earth collision prob remove for optimizer
+    # dist_e = np.array([])
+    # for i in range(len((x)[1, :])):
+    #     dist_e = np.hstack((dist_e, [la.norm((x)[:, i])]))
+    # ec = min(dist_e)
+    #
+    # if ec <= (R_earth + 100000):
+    #     Earth_Collision = np.nan
+    # else:
+    #     Earth_Collision = 0
+    a = min(dist_m)  # + Earth_Collision
+    b = la.norm(dv)
+    norm_a = a / (3 * R_moon)
+    norm_b = b / 3000
+    cost = c1 * norm_a + c2 * norm_b
+    return cost
+
+
+def Cost2(x, x_moon, dv, c1, c2, R_moon = R_moon):
+    # Check for moon intercept
+    dist_m = np.array([])
+    for i in range(len((x - x_moon)[1, :])):
+        dist_m = np.hstack((dist_m, [la.norm((x - x_moon)[:, i])]))
+    # Check for earth collision prob remove for optimizer
+    dist_e = np.array([])
+    for i in range(len((x)[1, :])):
+        dist_e = np.hstack((dist_e, [la.norm((x)[:, i])]))
+    ec = min(dist_e)
+    #
+    # if ec <= (R_earth + 100000):
+    #     Earth_Collision = 1
+    # else:
+    #     Earth_Collision = 0
+    a = min(dist_m)
+    b = la.norm(dv)
+    norm_a = a / (3 * R_moon)
+    norm_b = b / 3000
+    cost = c1 * norm_a + c2 * norm_b
+    return cost, ec
+
+
+def Cost3(x, x_moon, dv, c1, c2, R_moon = R_moon):
+    # Check for moon intercept
+    dist_m = np.array([])
+    for i in range(len((x - x_moon)[1, :])):
+        dist_m = np.hstack((dist_m, [la.norm((x - x_moon)[:, i])]))
+    # Check for earth collision prob remove for optimizer
     dist_e = np.array([])
     for i in range(len((x)[1, :])):
         dist_e = np.hstack((dist_e, [la.norm((x)[:, i])]))
@@ -155,7 +201,7 @@ def display(x, x_moon, R_earth = R_earth, R_moon = R_moon):
     axs.plot(x_moon[0, :], x_moon[1, :], color = "grey", linewidth = 0.5, linestyle = "dashed")
     axs.plot(x_c_m, y_c_m, color = "grey", linewidth = 1.5)
 
-    axs.plot(x[0, :], x[1, :], color = "red", linewidth = 1.5)
+    axs.plot(x[0, :], x[1, :], color = "red", linewidth = 1, linestyle = "dashed")
 
     dist = np.array([])
     for i in range(len((x - x_moon)[1, :])):
@@ -163,22 +209,22 @@ def display(x, x_moon, R_earth = R_earth, R_moon = R_moon):
     a = min(dist)
     ai = np.where(dist == a)
 
-    x_c_m, y_c_m = circle(R_moon, (x_moon[0, ai], x_moon[1, ai]))
-    axs.plot(x_c_m, y_c_m, color = "yellow", linewidth = 1.5)
+    x_c_m_2, y_c_m_2 = circle(R_moon, (x_moon[0, ai[0]], x_moon[1, ai[0]]))
+    axs.plot(x_c_m_2, y_c_m_2, color = "purple", linewidth = 1.5)
 
-    axs.plot(x[0, ai], x[1, ai], color = "yellow", marker = "x")
+    axs.plot(x[0, ai], x[1, ai], color = "yellow", marker = "x", markersize = 5)
 
     axs.set_xlim(left = -5 * 10 ** 8, right = 5 * 10 ** 8)
     axs.set_ylim(bottom = -5 * 10 ** 8, top = 5 * 10 ** 8)
     axs.set_xlabel("")
     axs.set_ylabel("")
     fig.show()
-    fig.savefig("Trajectory_simulation")
+    fig.savefig("Trajectory_simulation_NM")
 
 
 if __name__ == "__main__":
-    angle = -80
-    magnitude = 6000
+    angle = 21.89719394321709
+    magnitude = 3928.6754761701295
     norm_dv = np.array([[np.cos(np.deg2rad(angle))],
                         [np.sin(np.deg2rad(angle))],
                         [0]])

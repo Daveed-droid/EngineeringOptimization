@@ -15,14 +15,14 @@ plt.rcParams["figure.figsize"] = 12.8, 9.6
 
 ax = plt.axes(projection = '3d')
 
-X, Y = np.meshgrid(range(-90, 90, 5), range(1000, 8000, 200))
+X, Y = np.meshgrid(range(-90, 90, 1), range(1000, 8000, 40))
 
-Z = np.genfromtxt("Data/Z2.csv", delimiter = ",")
-imgname = "_Low_Res"
+Z = np.genfromtxt("Data/dt100dX21dY240_2.csv", delimiter = ",")
+imgname = "_High_Res_NM"
 
 ax.plot_wireframe(X, Y, Z)
 ax.plot_surface(X, Y, Z, cmap = 'jet', alpha = 0.5)
-# ax.scatter3D(X,Y,Z, c='r')
+# ax.scatter3D(26.09682, 3382.88681, 1.1419254529722123, color = "purple")
 ###
 ax.set_xlabel("Angle of $\Delta$V [deg]")
 ax.set_ylabel("Magnitude of $\Delta$V [m/s]")
@@ -36,6 +36,21 @@ cs = plt.contourf(X, Y, Z, 100, cmap = 'jet')
 
 # add default colorbar for the map
 cbar = plt.colorbar(cs)
+# Optimization terminated successfully.
+#          Current function value: 1.141925
+#          Iterations: 92
+#          Function evaluations: 203
+# (60, 6000)= 26.09682, 3382.88681
+# Optimization terminated successfully.
+# Current function value: 1.309558
+# Iterations: 84
+# Function evaluations: 168
+# (60, 6000)= 21.89719394321709, 3928.6754761701295
+
+Z_min_in = np.where(Z == np.min(Z))
+
+# plt.plot(X[Z_min_in], Y[Z_min_in], color = "red", marker = "X", markersize=15)
+plt.plot(21.89719394321709, 3928.6754761701295, color = "white", marker = "X", markersize = 15)
 plt.xlabel("Angle of $\Delta$V [deg]")
 plt.ylabel("Magnitude of $\Delta$V [m/s]")
 cbar.set_label("Cost of Trajectory [-]", rotation = 90)

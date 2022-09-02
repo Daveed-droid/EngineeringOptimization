@@ -17,12 +17,12 @@ ax = plt.axes(projection = '3d')
 
 X, Y = np.meshgrid(range(-90, 90, 5), range(1000, 8000, 200))
 
-Z = np.genfromtxt("Data/Z2.csv", delimiter = ",")
-imgname = "_Low_Res"
+Z = np.genfromtxt("Data/dt100dX25dY2200_check_weights.csv", delimiter = ",")
+imgname = "_corrected_W"
 
 ax.plot_wireframe(X, Y, Z)
 ax.plot_surface(X, Y, Z, cmap = 'jet', alpha = 0.5)
-# ax.scatter3D(X,Y,Z, c='r')
+# ax.scatter3D(26.09682, 3382.88681, 1.1419254529722123, color = "purple")
 ###
 ax.set_xlabel("Angle of $\Delta$V [deg]")
 ax.set_ylabel("Magnitude of $\Delta$V [m/s]")
@@ -36,6 +36,9 @@ cs = plt.contourf(X, Y, Z, 100, cmap = 'jet')
 
 # add default colorbar for the map
 cbar = plt.colorbar(cs)
+
+Z_min_in = np.where(Z == np.min(Z))
+
 plt.xlabel("Angle of $\Delta$V [deg]")
 plt.ylabel("Magnitude of $\Delta$V [m/s]")
 cbar.set_label("Cost of Trajectory [-]", rotation = 90)
