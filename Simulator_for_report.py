@@ -1,15 +1,8 @@
 """
 @Project ：Engineering_Optimization
 @File ：Simulator.py
-@Author ：David Canosa Ybarra
+@Author ：David Canosa Ybarra & Andrei Dumitrescu
 @Date ：28/06/2022 15:43
-
-Version 1.0.1
-
-General things to do:
-TODO: Implement a way to visualize the data [DONE]
-TODO: Add better propagators
-TODO: Add performance metric [DONE]
 """
 import numpy as np
 from numpy import linalg as la
@@ -21,6 +14,7 @@ R_earth, ISS_alt, R_moon = 6.378 * 10 ** 6, 4.000 * 10 ** 5, 1.738 * 10 ** 6
 
 def Simulate(propagator, alpha, beta, alt, dv, dt = 15, G = G, M_earth = M_earth, M_moon = M_moon):
     """
+    Simulates the physics of an Earth and Moon model
     :param propagator: Numerical state propagator
     :param alpha: Starting phase of spacecraft
     :param beta: Starting phase of the moon
@@ -56,12 +50,22 @@ def Simulate(propagator, alpha, beta, alt, dv, dt = 15, G = G, M_earth = M_earth
         x = np.hstack((x, propagator(x_dot[:, -1:], x[:, -1:], dt)))
         # 3d. Set the new time for the loop to start at and print progress bar
         t = np.hstack((t, t[-1] + dt))
-        # ShowLoading(t[-1], t_end)
+        ShowLoading(t[-1], t_end)
     # 4. End the simulation and return the position values for the spacecraft and the moon at each respective time
     return x, x_moon
 
 
 def Cost(x, x_moon, dv, c1, c2, R_moon = R_moon):
+    """
+    Cost function
+    :param x: Position array of the spacecraft
+    :param x_moon: Position array of the Moon
+    :param dv: Manoeuvre delta-v vector
+    :param c1: Weight of moon proximity
+    :param c2: Weight of delta-v
+    :param R_moon: Constant
+    :return: Cost of the trajectory
+    """
     # Check for moon intercept
     dist_m = np.array([])
     for i in range(len((x - x_moon)[1, :])):
@@ -75,6 +79,16 @@ def Cost(x, x_moon, dv, c1, c2, R_moon = R_moon):
 
 
 def Cost2(x, x_moon, dv, c1, c2, R_moon = R_moon):
+    """
+    Cost function
+    :param x: Position array of the spacecraft
+    :param x_moon: Position array of the Moon
+    :param dv: Manoeuvre delta-v vector
+    :param c1: Weight of moon proximity
+    :param c2: Weight of delta-v
+    :param R_moon: Constant
+    :return: Cost of the trajectory and Earth collision boolean
+    """
     # Check for moon intercept
     dist_m = np.array([])
     for i in range(len((x - x_moon)[1, :])):
@@ -94,6 +108,16 @@ def Cost2(x, x_moon, dv, c1, c2, R_moon = R_moon):
 
 
 def Cost3(x, x_moon, dv, c1, c2, R_moon = R_moon):
+    """
+    Cost function
+    :param x: Position array of the spacecraft
+    :param x_moon: Position array of the Moon
+    :param dv: Manoeuvre delta-v vector
+    :param c1: Weight of moon proximity
+    :param c2: Weight of delta-v
+    :param R_moon: Constant
+    :return: Cost of the trajectory
+    """
     # Check for moon intercept
     dist_m = np.array([])
     for i in range(len((x - x_moon)[1, :])):
@@ -130,6 +154,7 @@ def SimplePropagator(x_dot, x, dt):
 
 def InitialConditions(alpha, alt, G = G, M_earth = M_earth, R_earth = R_earth):
     """
+    Sets the initial conditions for the simulator to use
     :param alpha: Initial phase of the spacecraft
     :param alt: Starting altitude of the spacecraft
     :param G: Constant
@@ -149,6 +174,7 @@ def InitialConditions(alpha, alt, G = G, M_earth = M_earth, R_earth = R_earth):
 
 def MoonPosition(beta, t, alt_moon = alt_moon, M_earth = M_earth, G = G):
     """
+    Gives the position of the moon at time t
     :param beta: Initial phase of the moon
     :param t: Current time elapsed
     :param alt_moon: Distance from the center of the moon to the center of earth
@@ -165,6 +191,13 @@ def MoonPosition(beta, t, alt_moon = alt_moon, M_earth = M_earth, G = G):
 
 
 def ShowLoading(t, t_end, length = int(20)):
+    """
+    Prints a visual representation of the time that is left
+    :param t: Current time
+    :param t_end: End time
+    :param length: Length of the loading bar
+    :return: None
+    """
     Loaded = int((t / t_end) * length) * "|"
     Todo = (length - int((t / t_end) * length)) * ":"
     print(f"[{Loaded}{Todo}]")
@@ -172,10 +205,10 @@ def ShowLoading(t, t_end, length = int(20)):
 
 def circle(r, p = (0, 0)):
     """
-
-    :param r:
-    :param p:
-    :return:
+    Returns position of a circle
+    :param r: Radius of the circle
+    :param p: Position of the circle
+    :return: x and y coordinates of the circle's outline
     """
     theta = np.deg2rad(np.arange(0, 360, 1))
     x = r * np.sin(theta) + p[0]
@@ -185,33 +218,35 @@ def circle(r, p = (0, 0)):
 
 def display(x, x_moon, R_earth = R_earth, R_moon = R_moon):
     """
-
-    :param x:
-    :param x_moon:
-    :param R_earth:
-    :param R_moon:
-    :return:
+    Shows a visual representation of the orbit
+    :param x: Position array of the spacecraft
+    :param x_moon: Position array of the Moon
+    :param R_earth: Constant
+    :param R_moon: Constant
+    :return: None
     """
     fig, axs = plt.subplots(1, 1, figsize = (5, 5), dpi = 400)
 
+    # Plots the surface of the Earth
     x_c, y_c = circle(R_earth)
     axs.plot(x_c, y_c, color = "blue", linewidth = 1.5)
-    x_c_m, y_c_m = circle(R_moon, (x_moon[0, -1], x_moon[1, -1]))
 
+    # Plots the surface of the Moon and its path
+    x_c_m, y_c_m = circle(R_moon, (x_moon[0, -1], x_moon[1, -1]))
     axs.plot(x_moon[0, :], x_moon[1, :], color = "grey", linewidth = 0.5, linestyle = "dashed")
     axs.plot(x_c_m, y_c_m, color = "grey", linewidth = 1.5)
 
+    # Plots path of the spacecraft
     axs.plot(x[0, :], x[1, :], color = "red", linewidth = 1, linestyle = "dashed")
 
+    # Plots the closest moon intercept and Moon at that time
     dist = np.array([])
     for i in range(len((x - x_moon)[1, :])):
         dist = np.hstack((dist, [la.norm((x - x_moon)[:, i])]))
     a = min(dist)
     ai = np.where(dist == a)
-
     x_c_m_2, y_c_m_2 = circle(R_moon, (x_moon[0, ai[0]], x_moon[1, ai[0]]))
     axs.plot(x_c_m_2, y_c_m_2, color = "purple", linewidth = 1.5)
-
     axs.plot(x[0, ai], x[1, ai], color = "yellow", marker = "x", markersize = 5)
 
     axs.set_xlim(left = -5 * 10 ** 8, right = 5 * 10 ** 8)
@@ -220,18 +255,3 @@ def display(x, x_moon, R_earth = R_earth, R_moon = R_moon):
     axs.set_ylabel("")
     fig.show()
     fig.savefig("Trajectory_simulation_NM")
-
-
-if __name__ == "__main__":
-    angle = 21.89719394321709
-    magnitude = 3928.6754761701295
-    norm_dv = np.array([[np.cos(np.deg2rad(angle))],
-                        [np.sin(np.deg2rad(angle))],
-                        [0]])
-    dv_man = norm_dv * magnitude
-    x, x_moon = Simulate(SimplePropagator, 0, 120, 400000, dv_man, dt = 100)
-    dist = np.array([])
-    for i in range(len((x)[1, :])):
-        dist = np.hstack((dist, [la.norm((x)[:, i])]))
-    a = min(dist)
-    display(x, x_moon)
